@@ -43,6 +43,9 @@ async function run() {
     const userCollection = client
       .db("Task-Management-System")
       .collection("users");
+    const taskCollection = client
+      .db("Task-Management-System")
+      .collection("tasks");
 
     // jwt related api
     app.post("/jwt", async (req, res) => {
@@ -56,7 +59,6 @@ async function run() {
     // post users information related api
     app.post("/users", async (req, res) => {
       const user = req.body;
-
       // insert email if user doesnt exists:
       // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
       const query = { email: user.email };
@@ -71,6 +73,13 @@ async function run() {
     // get users information related api
     app.get("/users", async (req, res) => {
       const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    // task saved in database
+    app.post("/tasks", async (req, res) => {
+      const task = req.body;
+      const result = taskCollection.insertOne(task);
       res.send(result);
     });
 
