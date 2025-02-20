@@ -4,13 +4,30 @@ const cors = require("cors");
 const port = process.env.PORT || 9000;
 const jwt = require("jsonwebtoken");
 const app = express();
+const http = require("http");
+const server = http.createServer(app);
+
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
 
 app.use(cors());
 app.use(express.json());
 
-// const uri = "mongodb+srv://<db_username>:<db_password>@cluster0.e4qpy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.e4qpy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+
+// WebSocket Connection
+io.on("connection", (socket) => {
+  console.log("A user connected");
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
+});
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -36,11 +53,26 @@ async function run() {
       res.send({ token });
     });
 
-    // users related api
-    // app.get("/users", async (req, res) => {
-    //   const result = await userCollection.find().toArray();
-    //   res.send(result);
-    // });
+    // post users information related api
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+
+      // insert email if user doesnt exists:
+      // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
+      const query = { email: user.email };
+      const existingUser = await userCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "user already exists", insertedId: null });
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // get users information related api
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
