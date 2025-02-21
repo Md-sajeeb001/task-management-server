@@ -80,16 +80,19 @@ async function run() {
     app.post("/tasks", async (req, res) => {
       const task = req.body;
       const result = taskCollection.insertOne(task);
+
+      // Emit real-time update
+      io.emit("taskUpdated", { action: "add", task });
       res.send(result);
     });
 
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.connect();
+    // // Send a ping to confirm a successful connection
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
