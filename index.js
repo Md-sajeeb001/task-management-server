@@ -4,30 +4,41 @@ const cors = require("cors");
 const port = process.env.PORT || 9000;
 const jwt = require("jsonwebtoken");
 const app = express();
-const http = require("http");
-const server = http.createServer(app);
+// const http = require("http");
+// const server = http.createServer(app);
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const { Server } = require("socket.io");
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
+// const io = new Server(server, {
+//   cors: {
+//     origin: "*",
+//   },
+// });
+const corsOptions = {
+  origin: [
+    "https://task-management-b0fbe.web.app",
+    // "http://localhost:4173",
+    // "http://localhost:4174",
+    "http://localhost:5173",
+  ],
+  methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.e4qpy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // WebSocket Connection
-io.on("connection", (socket) => {
-  console.log("A user connected");
+// io.on("connection", (socket) => {
+//   console.log("A user connected");
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
-});
+//   socket.on("disconnect", () => {
+//     console.log("User disconnected");
+//   });
+// });
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -82,14 +93,60 @@ async function run() {
       const result = taskCollection.insertOne(task);
 
       // Emit real-time update
-      io.emit("taskUpdated", { action: "add", task });
+      // io.emit("taskUpdated", { action: "add", task });
       res.send(result);
     });
 
-    app.get("/tasks", async (req, res) => {
-      const result = await taskCollection.find().toArray();
+    // get data by useremail
+    app.get("/tasks/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await taskCollection.find(query).toArray();
       res.send(result);
     });
+
+    // delete data form db
+    app.delete("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await taskCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Update task by ID (including category)
+    app.put("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedTask = req.body;
+
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          title: updatedTask.title,
+          des: updatedTask.des,
+          category: updatedTask.category, // Include category in update
+        },
+      };
+
+      const result = await taskCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    // app.get("/tasks/:email", async (req, res) => {
+    //   const email = req.params.email;
+
+    //   // Check if the user exists
+    //   const userExists = await userCollection.findOne({ email: email });
+
+    //   if (!userExists) {
+    //     return res.send({ message: "User not found", tasks: [] });
+    //   }
+
+    //   // Fetch tasks if the user exists
+    //   const tasks = await taskCollection.find({ email: email }).toArray();
+    //   res.send(tasks);
+    // });
+
+    // app.put("/tasks/:id", async (res, res) => {});
 
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
