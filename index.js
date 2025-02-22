@@ -106,7 +106,7 @@ async function run() {
     });
 
     // delete data form db
-    app.delete("/tasks/:id", async (req, res) => {
+    app.delete("/tasks-delete/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await taskCollection.deleteOne(query);
@@ -114,7 +114,7 @@ async function run() {
     });
 
     // Update task by ID (including category)
-    app.put("/tasks/:id", async (req, res) => {
+    app.put("/tasks-update/:id", async (req, res) => {
       const id = req.params.id;
       const updatedTask = req.body;
 
