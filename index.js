@@ -17,8 +17,8 @@ const { Server } = require("socket.io");
 const corsOptions = {
   origin: [
     "https://task-management-b0fbe.web.app",
-    // "http://localhost:4173",
-    // "http://localhost:4174",
+    "http://localhost:4173",
+    "http://localhost:4174",
     "http://localhost:5173",
   ],
   methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
@@ -114,7 +114,24 @@ async function run() {
     });
 
     // Update task by ID (including category)
-    app.put("/tasks-update/:id", async (req, res) => {
+    // app.put("/tasks-update/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const updatedTask = req.body;
+
+    //   const query = { _id: new ObjectId(id) };
+    //   const updateDoc = {
+    //     $set: {
+    //       title: updatedTask.title,
+    //       des: updatedTask.des,
+    //       category: updatedTask.category, // Include category in update
+    //     },
+    //   };
+
+    //   const result = await taskCollection.updateOne(query, updateDoc);
+    //   res.send(result);
+    // });
+
+    app.patch("/tasks-update/:id", async (req, res) => {
       const id = req.params.id;
       const updatedTask = req.body;
 
@@ -123,12 +140,23 @@ async function run() {
         $set: {
           title: updatedTask.title,
           des: updatedTask.des,
-          category: updatedTask.category, // Include category in update
+          category: updatedTask.category, 
         },
       };
 
-      const result = await taskCollection.updateOne(query, updateDoc);
-      res.send(result);
+      try {
+        const result = await taskCollection.updateOne(query, updateDoc);
+
+        if (result.modifiedCount === 0) {
+          return res
+            .status(404)
+            .send({ message: "Task not found or no changes made" });
+        }
+
+        res.send({ message: "Task updated successfully", data: result });
+      } catch (error) {
+        res.status(500).send({ message: "Error updating task", error });
+      }
     });
 
     // app.get("/tasks/:email", async (req, res) => {
